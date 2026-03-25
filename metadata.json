@@ -1,0 +1,5 @@
+{
+  "name": "InclusiveCity - Smart Accessibility Platform",
+  "description": "A smart city infrastructure system for differently-abled and elderly citizens using AI, IoT, and GIS mapping.",
+  "requestFramePermissions": ["geolocation"]
+}
