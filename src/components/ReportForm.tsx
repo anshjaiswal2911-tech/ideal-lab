@@ -25,31 +25,34 @@ export default function ReportForm({ onReport, API_URL }: ReportFormProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/issues`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: formData.type,
-          severity: formData.severity,
-          location: { lat: 40.7128, lng: -74.0060, address: formData.address || 'Current Location' },
-          description: formData.description,
-          image: formData.image || undefined,
-        }),
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const newIssue: Issue = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: formData.type,
+        severity: formData.severity,
+        location: { lat: 40.7128 + (Math.random() - 0.5) * 0.01, lng: -74.0060 + (Math.random() - 0.5) * 0.01, address: formData.address || 'Current Location' },
+        description: formData.description,
+        image: formData.image || undefined,
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      };
+
+      onReport(newIssue);
+      setIsSuccess(true);
+      // Reset form
+      setFormData({
+        type: 'broken-footpath',
+        severity: 'medium',
+        address: '',
+        description: '',
+        image: null,
       });
 
-      if (response.ok) {
-        const newIssue = await response.json();
-        onReport(newIssue);
-        setIsSuccess(true);
-        // Reset form
-        setFormData({
-          type: 'broken-footpath',
-          severity: 'medium',
-          address: '',
-          description: '',
-          image: null,
-        });
-      }
+      // Auto dismiss success after 3s
+      setTimeout(() => setIsSuccess(false), 3000);
+
     } catch (error) {
       console.error('Failed to submit report:', error);
     } finally {

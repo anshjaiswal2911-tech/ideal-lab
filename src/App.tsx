@@ -64,7 +64,35 @@ export default function App() {
     voiceNav: false,
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [issues, setIssues] = useState<Issue[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([
+    {
+      id: "1",
+      type: "broken-footpath",
+      severity: "high",
+      location: { lat: 40.7128, lng: -74.0060, address: "Central Square" },
+      description: "Deep pothole near the pedestrian crossing making it inaccessible to wheelchairs.",
+      status: "pending",
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: "2",
+      type: "no-ramp",
+      severity: "medium",
+      location: { lat: 40.7138, lng: -74.0040, address: "Library Entrance" },
+      description: "Steps only at the main entrance, no ramp present.",
+      status: "resolved",
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+    },
+    {
+      id: "3",
+      type: "no-audio-signal",
+      severity: "high",
+      location: { lat: 40.7110, lng: -74.0080, address: "Broadway Junction" },
+      description: "Traffic light has no auditory feedback for visually impaired.",
+      status: "pending",
+      timestamp: new Date().toISOString(),
+    }
+  ]);
   const API_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
@@ -88,20 +116,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const fetchIssues = async () => {
-      try {
-        const response = await fetch(`${API_URL}/issues`);
-        if (response.ok) {
-          const data = await response.json();
-          setIssues(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch issues:', error);
-      }
-    };
-    fetchIssues();
-  }, []);
+  // Mock API behavior handled solely via state now
 
   useEffect(() => {
     if (isDarkMode) {
@@ -343,14 +358,7 @@ export default function App() {
                   <AdminDashboard
                     issues={issues}
                     onResolve={async (id) => {
-                      try {
-                        const response = await fetch(`${API_URL}/issues/${id}/resolve`, { method: 'POST' });
-                        if (response.ok) {
-                          setIssues(issues.map(i => i.id === id ? { ...i, status: 'resolved' } : i));
-                        }
-                      } catch (error) {
-                        console.error('Failed to resolve issue:', error);
-                      }
+                      setIssues(issues.map(i => i.id === id ? { ...i, status: 'resolved' as const } : i));
                     }}
                   />
                 )}
