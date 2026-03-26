@@ -64,37 +64,34 @@ export default function App() {
     voiceNav: false,
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [issues, setIssues] = useState<Issue[]>([
-    {
-      id: "1",
-      type: "broken-footpath",
-      severity: "high",
-      location: { lat: 40.7128, lng: -74.0060, address: "Central Square" },
-      description: "Deep pothole near the pedestrian crossing making it inaccessible to wheelchairs.",
-      status: "pending",
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: "2",
-      type: "no-ramp",
-      severity: "medium",
-      location: { lat: 40.7138, lng: -74.0040, address: "Library Entrance" },
-      description: "Steps only at the main entrance, no ramp present.",
-      status: "resolved",
-      timestamp: new Date(Date.now() - 172800000).toISOString(),
-    },
-    {
-      id: "3",
-      type: "no-audio-signal",
-      severity: "high",
-      location: { lat: 40.7110, lng: -74.0080, address: "Broadway Junction" },
-      description: "Traffic light has no auditory feedback for visually impaired.",
-      status: "pending",
-      timestamp: new Date().toISOString(),
-    }
-  ]);
-  const API_URL = 'http://localhost:5000/api';
+  const [issues, setIssues] = useState<Issue[]>([]);
 
+  useEffect(() => {
+    // Fetch live issues from Supabase
+    const fetchIssues = async () => {
+      const { data, error } = await supabase
+        .from('issues')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (!error && data) {
+        // Map database row back to frontend Issue structure
+        const formattedIssues: Issue[] = data.map(row => ({
+          id: row.id,
+          type: row.type,
+          severity: row.severity,
+          location: { lat: row.location_lat, lng: row.location_lng, address: row.address },
+          description: row.description,
+          status: row.status,
+          image: row.image,
+          timestamp: row.timestamp
+        }));
+        setIssues(formattedIssues);
+      }
+    };
+    fetchIssues();
+  }, []);
+  // Mock API behavior handled solely via state now
   useEffect(() => {
     // Listen to Supabase auth state changes (handles Google OAuth redirect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -320,22 +317,9 @@ export default function App() {
             {currentView === 'landing' && <Landing onNavigate={setCurrentView} />}
             {currentView === 'login' && (
               <Login
-                onLogin={async (name, email) => {
-                  try {
-                    const response = await fetch(`${API_URL}/login`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email, password: 'password' }), // simple mock
-                    });
-                    if (response.ok) {
-                      const data = await response.json();
-                      setIsLoggedIn(true);
-                      setUser({ name: data.name, email: data.email });
-                      setCurrentView('home');
-                    }
-                  } catch (error) {
-                    console.error('Login failed:', error);
-                  }
+                onLogin={(name, email) => {
+                  // State update is handled by supabase.auth.onAuthStateChange in useEffect
+                  setCurrentView('home');
                 }}
                 onNavigate={setCurrentView}
               />
@@ -351,14 +335,20 @@ export default function App() {
                 {currentView === 'voice' && <VoiceNav onNavigate={setCurrentView} />}
                 {currentView === 'impact' && <CommunityImpact onNavigate={setCurrentView} />}
                 {currentView === 'map' && <MapSection issues={issues} />}
-                {currentView === 'report' && <ReportForm onReport={(newIssue) => setIssues([newIssue, ...issues])} API_URL={API_URL} />}
+                {currentView === 'report' && <ReportForm onReport={(newIssue) => setIssues([newIssue, ...issues])} />}
                 {currentView === 'audit' && <AIAudit />}
                 {currentView === 'crossing' && <CrossingSimulation accMode={accMode} />}
                 {currentView === 'dashboard' && (
                   <AdminDashboard
                     issues={issues}
                     onResolve={async (id) => {
-                      setIssues(issues.map(i => i.id === id ? { ...i, status: 'resolved' as const } : i));
+                      const { error } = await supabase
+                        .from('issues')
+                        .update({ status: 'resolved' })
+                        .eq('id', id);
+                      if (!error) {
+                        setIssues(issues.map(i => i.id === id ? { ...i, status: 'resolved' as const } : i));
+                      }
                     }}
                   />
                 )}

@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Camera, MapPin, Send, CheckCircle2, AlertCircle, Upload, X } from 'lucide-react';
 import { Issue } from '../types';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 interface ReportFormProps {
   onReport: (issue: Issue) => void;
-  API_URL: string;
 }
 
-export default function ReportForm({ onReport, API_URL }: ReportFormProps) {
+export default function ReportForm({ onReport }: ReportFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,21 +25,37 @@ export default function ReportForm({ onReport, API_URL }: ReportFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Insert into Supabase 'issues' table
+      const { data, error } = await supabase
+        .from('issues')
+        .insert([{
+          type: formData.type,
+          severity: formData.severity,
+          location_lat: 40.7128 + (Math.random() - 0.5) * 0.01,
+          location_lng: -74.0060 + (Math.random() - 0.5) * 0.01,
+          address: formData.address || 'Current Location',
+          description: formData.description,
+          status: 'pending',
+          image: formData.image || null,
+        }])
+        .select()
+        .single();
 
-      const newIssue: Issue = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: formData.type,
-        severity: formData.severity,
-        location: { lat: 40.7128 + (Math.random() - 0.5) * 0.01, lng: -74.0060 + (Math.random() - 0.5) * 0.01, address: formData.address || 'Current Location' },
-        description: formData.description,
-        image: formData.image || undefined,
-        status: 'pending',
-        timestamp: new Date().toISOString()
-      };
+      if (error) throw error;
 
-      onReport(newIssue);
+      if (data) {
+        const newIssue: Issue = {
+          id: data.id,
+          type: data.type,
+          severity: data.severity,
+          location: { lat: data.location_lat, lng: data.location_lng, address: data.address },
+          description: data.description,
+          status: data.status,
+          image: data.image,
+          timestamp: data.timestamp
+        };
+        onReport(newIssue);
+      }
       setIsSuccess(true);
       // Reset form
       setFormData({
