@@ -33,20 +33,20 @@ export default function Landing({ onNavigate }: LandingProps) {
             </div>
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
               <Trans i18nKey="hero_title">
-                Building <span className="text-brand-500">Inclusive</span> Cities with Smart Tech
+                <span className="text-brand-500">Inclusive</span> Cities with Smart Tech
               </Trans>
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 leading-relaxed max-w-xl">
               {t('hero_desc')}
             </p>
             <div className="flex flex-wrap gap-4">
-              <button 
+              <button
                 onClick={() => onNavigate('login')}
                 className="px-8 py-4 rounded-2xl bg-brand-500 text-white font-bold shadow-xl shadow-brand-500/30 hover:bg-brand-600 hover:-translate-y-1 transition-all flex items-center gap-2"
               >
                 {t('get_started')} <ArrowRight size={20} />
               </button>
-              <button 
+              <button
                 onClick={() => onNavigate('login')}
                 className="px-8 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center gap-2"
               >
@@ -57,10 +57,10 @@ export default function Landing({ onNavigate }: LandingProps) {
             <div className="mt-12 flex items-center gap-8">
               <div className="flex -space-x-3">
                 {[1, 2, 3, 4].map(i => (
-                  <img 
+                  <img
                     key={i}
-                    src={`https://picsum.photos/seed/user${i}/100/100`} 
-                    alt="User" 
+                    src={`https://picsum.photos/seed/user${i}/100/100`}
+                    alt="User"
                     className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
                     referrerPolicy="no-referrer"
                   />
@@ -80,15 +80,15 @@ export default function Landing({ onNavigate }: LandingProps) {
             className="relative"
           >
             <div className="relative z-10 rounded-[2rem] overflow-hidden shadow-2xl border border-white/20">
-              <img 
-                src="https://picsum.photos/seed/smartcity/800/600" 
-                alt="Smart City Illustration" 
+              <img
+                src="https://picsum.photos/seed/smartcity/800/600"
+                alt="Smart City Illustration"
                 className="w-full h-auto object-cover"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
             </div>
-            
+
             {/* Background Glow */}
             <div className="absolute -inset-4 bg-brand-500/20 blur-3xl -z-10 rounded-full" />
           </motion.div>
@@ -125,10 +125,11 @@ export default function Landing({ onNavigate }: LandingProps) {
               color: "bg-brand-500"
             }
           ].map((feature, idx) => (
-            <motion.div
+            <motion.button
               key={idx}
+              onClick={() => onNavigate('login')}
               whileHover={{ y: -10 }}
-              className="p-8 rounded-[2rem] glass hover:shadow-2xl transition-all border border-white/10"
+              className="text-left w-full p-8 rounded-[2rem] glass hover:shadow-2xl transition-all border border-white/10 group"
             >
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg", feature.color)}>
                 <feature.icon size={28} />
@@ -137,7 +138,7 @@ export default function Landing({ onNavigate }: LandingProps) {
               <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                 {feature.desc}
               </p>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </section>

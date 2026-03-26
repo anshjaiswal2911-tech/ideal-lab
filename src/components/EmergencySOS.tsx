@@ -10,16 +10,17 @@ interface EmergencySOSProps {
 export default function EmergencySOS({ onNavigate }: EmergencySOSProps) {
   const [isAlerting, setIsAlerting] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [alertSent, setAlertSent] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isAlerting && countdown > 0) {
+    if (isAlerting && countdown > 0 && !alertSent) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (isAlerting && countdown === 0) {
-      // Alert sent
+    } else if (isAlerting && countdown === 0 && !alertSent) {
+      setAlertSent(true);
     }
     return () => clearTimeout(timer);
-  }, [isAlerting, countdown]);
+  }, [isAlerting, countdown, alertSent]);
 
   const handleSOS = () => {
     setIsAlerting(true);
@@ -29,6 +30,7 @@ export default function EmergencySOS({ onNavigate }: EmergencySOSProps) {
   const cancelSOS = () => {
     setIsAlerting(false);
     setCountdown(5);
+    setAlertSent(false);
   };
 
   return (
@@ -50,7 +52,7 @@ export default function EmergencySOS({ onNavigate }: EmergencySOSProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
         {/* SOS Button Section */}
         <section className="flex flex-col items-center justify-center p-12 rounded-[3rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl relative overflow-hidden">
-          {isAlerting ? (
+          {isAlerting && !alertSent ? (
             <div className="text-center space-y-8 relative z-10">
               <div className="w-32 h-32 rounded-full border-8 border-red-500/20 flex items-center justify-center mx-auto relative">
                 <div className="absolute inset-0 rounded-full border-8 border-red-500 border-t-transparent animate-spin"></div>
@@ -60,16 +62,33 @@ export default function EmergencySOS({ onNavigate }: EmergencySOSProps) {
                 <h3 className="text-2xl font-bold text-red-500 mb-2">Sending SOS...</h3>
                 <p className="text-sm text-slate-500">Alerting emergency services and nearby volunteers in {countdown} seconds.</p>
               </div>
-              <button 
+              <button
                 onClick={cancelSOS}
                 className="px-8 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-bold hover:bg-slate-200 transition-all flex items-center gap-2 mx-auto"
               >
                 <X size={20} /> Cancel SOS
               </button>
             </div>
+          ) : isAlerting && alertSent ? (
+            <div className="text-center space-y-8 relative z-10">
+              <div className="w-32 h-32 rounded-full bg-red-500/10 flex items-center justify-center mx-auto relative overflow-hidden">
+                <div className="absolute inset-0 bg-red-500/20 animate-ping rounded-full"></div>
+                <ShieldCheck size={64} className="text-red-500 relative z-10" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-red-500 mb-2">SOS ALERT SENT</h3>
+                <p className="text-sm text-slate-500 font-medium">Emergency services and verified volunteers have been dispatched to your location.</p>
+              </div>
+              <button
+                onClick={cancelSOS}
+                className="px-8 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-bold hover:bg-slate-200 transition-all flex items-center gap-2 mx-auto"
+              >
+                <X size={20} /> End Emergency State
+              </button>
+            </div>
           ) : (
             <div className="text-center space-y-8 relative z-10">
-              <button 
+              <button
                 onClick={handleSOS}
                 className="w-48 h-48 rounded-full bg-red-500 text-white flex flex-col items-center justify-center gap-2 shadow-2xl shadow-red-500/40 hover:scale-105 active:scale-95 transition-all group"
               >
@@ -79,7 +98,7 @@ export default function EmergencySOS({ onNavigate }: EmergencySOSProps) {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Press and hold for 3 seconds</p>
             </div>
           )}
-          
+
           {/* Background Pulse */}
           {isAlerting && (
             <div className="absolute inset-0 bg-red-500/5 animate-pulse -z-10"></div>

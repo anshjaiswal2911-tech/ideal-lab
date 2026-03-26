@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Users, MapPin, Clock, Star, ShieldCheck, Heart, UserPlus, MessageSquare } from 'lucide-react';
 import { View } from '../types';
@@ -12,6 +13,9 @@ export default function VolunteerBuddy({ onNavigate }: VolunteerBuddyProps) {
     { id: 2, name: 'David Chen', distance: '0.8 km', rating: 4.8, verified: true, active: true },
     { id: 3, name: 'Elena Rodriguez', distance: '1.2 km', rating: 5.0, verified: true, active: false },
   ];
+
+  const [requestSent, setRequestSent] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -51,8 +55,14 @@ export default function VolunteerBuddy({ onNavigate }: VolunteerBuddyProps) {
                 <option>General Guidance</option>
               </select>
             </div>
-            <button className="w-full py-4 rounded-2xl bg-brand-500 text-white font-bold shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all">
-              Broadcast Request
+            <button
+              onClick={() => {
+                setRequestSent(true);
+                setTimeout(() => setRequestSent(false), 3000);
+              }}
+              className="w-full py-4 rounded-2xl bg-brand-500 text-white font-bold shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all"
+            >
+              {requestSent ? "Request Broadcasted! ✓" : "Broadcast Request"}
             </button>
             <p className="text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold">
               <ShieldCheck size={12} className="inline mr-1" /> All volunteers are background checked
@@ -73,9 +83,9 @@ export default function VolunteerBuddy({ onNavigate }: VolunteerBuddyProps) {
               >
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <img 
-                      src={`https://picsum.photos/seed/vol${v.id}/100/100`} 
-                      alt={v.name} 
+                    <img
+                      src={`https://picsum.photos/seed/vol${v.id}/100/100`}
+                      alt={v.name}
                       className="w-12 h-12 rounded-xl object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -110,8 +120,12 @@ export default function VolunteerBuddy({ onNavigate }: VolunteerBuddyProps) {
             Join our network of 5,000+ citizens helping make the city accessible. Earn impact points and badges for every assistance provided.
           </p>
         </div>
-        <button className="px-8 py-4 rounded-2xl bg-white text-indigo-600 font-bold hover:bg-indigo-50 transition-all whitespace-nowrap">
-          Join the Network
+        <button
+          onClick={() => setJoined(true)}
+          disabled={joined}
+          className="px-8 py-4 rounded-2xl bg-white text-indigo-600 font-bold hover:bg-indigo-50 transition-all whitespace-nowrap disabled:opacity-50"
+        >
+          {joined ? "Welcome to the Network! 🎉" : "Join the Network"}
         </button>
       </div>
     </div>

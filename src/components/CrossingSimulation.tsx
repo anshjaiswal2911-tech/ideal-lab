@@ -28,7 +28,20 @@ export default function CrossingSimulation({ accMode }: CrossingSimulationProps)
 
   const playVoiceAlert = () => {
     setIsVoiceActive(true);
-    setTimeout(() => setIsVoiceActive(false), 2000);
+
+    // Play actual audio using browser speech synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      const message = status === 'stop'
+        ? 'Wait to cross. The light is red.'
+        : 'Smart crossing active. Safe to cross now.';
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    setTimeout(() => setIsVoiceActive(false), 3000);
   };
 
   return (
@@ -45,24 +58,24 @@ export default function CrossingSimulation({ accMode }: CrossingSimulationProps)
             {/* Red Light */}
             <div className={cn(
               "w-24 h-24 rounded-full transition-all duration-500 flex items-center justify-center",
-              status === 'stop' 
-                ? "bg-red-500 shadow-[0_0_40px_rgba(239,68,68,0.6)]" 
+              status === 'stop'
+                ? "bg-red-500 shadow-[0_0_40px_rgba(239,68,68,0.6)]"
                 : "bg-red-950 opacity-20"
             )}>
               {status === 'stop' && <AlertCircle size={48} className="text-white" />}
             </div>
-            
+
             {/* Green Light */}
             <div className={cn(
               "w-24 h-24 rounded-full transition-all duration-500 flex items-center justify-center",
-              status === 'go' 
-                ? "bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)]" 
+              status === 'go'
+                ? "bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)]"
                 : "bg-emerald-950 opacity-20"
             )}>
               {status === 'go' && <CheckCircle2 size={48} className="text-white" />}
             </div>
           </div>
-          
+
           <div className="mt-8 text-center">
             <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 font-display font-bold text-3xl">
               <Timer className="text-brand-500" />
@@ -85,7 +98,7 @@ export default function CrossingSimulation({ accMode }: CrossingSimulationProps)
               <Accessibility size={24} className="text-brand-500" />
               Adaptive Features
             </h3>
-            
+
             <div className="space-y-4">
               <div className={cn(
                 "p-4 rounded-2xl border transition-all",
@@ -105,7 +118,7 @@ export default function CrossingSimulation({ accMode }: CrossingSimulationProps)
                 <p className="text-sm opacity-70 mb-3">
                   Voice alerts and haptic feedback for blind pedestrians.
                 </p>
-                <button 
+                <button
                   onClick={playVoiceAlert}
                   className="px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 hover:bg-indigo-600 transition-colors"
                 >

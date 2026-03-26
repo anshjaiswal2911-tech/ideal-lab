@@ -6,9 +6,10 @@ import { cn } from '../lib/utils';
 
 interface ReportFormProps {
   onReport: (issue: Issue) => void;
+  API_URL: string;
 }
 
-export default function ReportForm({ onReport }: ReportFormProps) {
+export default function ReportForm({ onReport, API_URL }: ReportFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,36 +20,41 @@ export default function ReportForm({ onReport }: ReportFormProps) {
     image: null as string | null,
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const newIssue: Issue = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: formData.type,
-        severity: formData.severity,
-        location: { lat: 40.7128, lng: -74.0060, address: formData.address || 'Current Location' },
-        description: formData.description,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-        image: formData.image || undefined,
-      };
-      
-      onReport(newIssue);
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      
-      // Reset form
-      setFormData({
-        type: 'broken-footpath',
-        severity: 'medium',
-        address: '',
-        description: '',
-        image: null,
+
+    try {
+      const response = await fetch(`${API_URL}/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: formData.type,
+          severity: formData.severity,
+          location: { lat: 40.7128, lng: -74.0060, address: formData.address || 'Current Location' },
+          description: formData.description,
+          image: formData.image || undefined,
+        }),
       });
-    }, 2000);
+
+      if (response.ok) {
+        const newIssue = await response.json();
+        onReport(newIssue);
+        setIsSuccess(true);
+        // Reset form
+        setFormData({
+          type: 'broken-footpath',
+          severity: 'medium',
+          address: '',
+          description: '',
+          image: null,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to submit report:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -71,14 +77,14 @@ export default function ReportForm({ onReport }: ReportFormProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3">
-          <motion.form 
+          <motion.form
             onSubmit={handleSubmit}
             className="glass rounded-[2.5rem] p-8 shadow-xl border border-white/10 space-y-6"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold ml-1">Issue Type</label>
-                <select 
+                <select
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as Issue['type'] }))}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-none text-sm focus:ring-2 focus:ring-brand-500 transition-all"
@@ -99,10 +105,10 @@ export default function ReportForm({ onReport }: ReportFormProps) {
                       onClick={() => setFormData(prev => ({ ...prev, severity: s }))}
                       className={cn(
                         "flex-1 py-3 rounded-2xl text-xs font-bold capitalize transition-all",
-                        formData.severity === s 
+                        formData.severity === s
                           ? s === 'high' ? "bg-red-500 text-white shadow-lg shadow-red-500/20" :
                             s === 'medium' ? "bg-yellow-500 text-white shadow-lg shadow-yellow-500/20" :
-                            "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                              "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
                           : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200"
                       )}
                     >
@@ -117,14 +123,14 @@ export default function ReportForm({ onReport }: ReportFormProps) {
               <label className="text-sm font-bold ml-1">Location</label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Enter address or use GPS" 
+                <input
+                  type="text"
+                  placeholder="Enter address or use GPS"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-none text-sm focus:ring-2 focus:ring-brand-500 transition-all"
                 />
-                <button 
+                <button
                   type="button"
                   className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-brand-500/10 text-brand-500 text-[10px] font-bold hover:bg-brand-500/20 transition-colors"
                 >
@@ -135,8 +141,8 @@ export default function ReportForm({ onReport }: ReportFormProps) {
 
             <div className="space-y-2">
               <label className="text-sm font-bold ml-1">Description</label>
-              <textarea 
-                placeholder="Describe the issue in detail..." 
+              <textarea
+                placeholder="Describe the issue in detail..."
                 rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -144,7 +150,7 @@ export default function ReportForm({ onReport }: ReportFormProps) {
               />
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={isSubmitting}
               className={cn(
@@ -177,7 +183,7 @@ export default function ReportForm({ onReport }: ReportFormProps) {
               {formData.image ? (
                 <div className="relative rounded-2xl overflow-hidden aspect-square bg-slate-100 dark:bg-slate-800">
                   <img src={formData.image} alt="Upload preview" className="w-full h-full object-cover" />
-                  <button 
+                  <button
                     onClick={() => setFormData(prev => ({ ...prev, image: null }))}
                     className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500 text-white shadow-lg hover:scale-110 transition-transform"
                   >
@@ -212,13 +218,13 @@ export default function ReportForm({ onReport }: ReportFormProps) {
       {/* Success Popup */}
       <AnimatePresence>
         {isSuccess && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="w-full max-w-md glass rounded-[2.5rem] p-10 text-center shadow-2xl border border-white/20"
@@ -230,7 +236,7 @@ export default function ReportForm({ onReport }: ReportFormProps) {
               <p className="text-slate-500 dark:text-slate-400 mb-8">
                 Thank you for your contribution. Authorities have been notified and you can track the status in the dashboard.
               </p>
-              <button 
+              <button
                 onClick={() => setIsSuccess(false)}
                 className="w-full py-4 rounded-2xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20"
               >

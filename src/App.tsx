@@ -6,18 +6,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { 
-  Map as MapIcon, 
-  AlertTriangle, 
-  Scan, 
-  Activity as TrafficLight, 
-  LayoutDashboard, 
-  Navigation, 
-  Accessibility, 
-  Moon, 
+import {
+  Map as MapIcon,
+  AlertTriangle,
+  Scan,
+  Activity as TrafficLight,
+  LayoutDashboard,
+  Navigation,
+  Accessibility,
+  Moon,
   Sun,
   Menu,
   X,
+  LogOut,
   ChevronRight,
   CheckCircle2,
   Info,
@@ -49,6 +50,7 @@ import EmergencySOS from './components/EmergencySOS';
 import VoiceNav from './components/VoiceNav';
 import CommunityImpact from './components/CommunityImpact';
 import LanguageSelector from './components/LanguageSelector';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const { t } = useTranslation();
@@ -62,26 +64,44 @@ export default function App() {
     voiceNav: false,
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [issues, setIssues] = useState<Issue[]>([
-    {
-      id: '1',
-      type: 'broken-footpath',
-      severity: 'high',
-      location: { lat: 40.7128, lng: -74.0060, address: 'Broadway & Wall St' },
-      description: 'Major cracks in the sidewalk making it impassable for wheelchairs.',
-      status: 'pending',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      type: 'no-ramp',
-      severity: 'medium',
-      location: { lat: 40.7142, lng: -74.0059, address: 'Chambers St' },
-      description: 'Missing ramp at the intersection.',
-      status: 'resolved',
-      timestamp: new Date().toISOString(),
-    }
-  ]);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const API_URL = 'http://localhost:5000/api';
+
+  useEffect(() => {
+    // Listen to Supabase auth state changes (handles Google OAuth redirect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const displayName = session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          session.user.email?.split('@')[0] || 'User';
+        setIsLoggedIn(true);
+        setUser({ name: displayName, email: session.user.email || '' });
+        if (currentView === 'login' || currentView === 'landing') {
+          setCurrentView('home');
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const response = await fetch(`${API_URL}/issues`);
+        if (response.ok) {
+          const data = await response.json();
+          setIssues(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch issues:', error);
+      }
+    };
+    fetchIssues();
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -116,7 +136,7 @@ export default function App() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10 dark:border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer group"
             onClick={() => setCurrentView('landing')}
           >
@@ -136,8 +156,8 @@ export default function App() {
                 onClick={() => setCurrentView(item.id as View)}
                 className={cn(
                   "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
-                  currentView === item.id 
-                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/20" 
+                  currentView === item.id
+                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/20"
                     : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
                 )}
               >
@@ -158,16 +178,16 @@ export default function App() {
                   <p className="text-[10px] font-bold leading-none">{user?.name || 'User'}</p>
                   <p className="text-[8px] text-slate-500 leading-none mt-1">Citizen</p>
                 </div>
-                <button 
-                  onClick={() => {
-                    setIsLoggedIn(false);
-                    setUser(null);
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
                     setCurrentView('landing');
                   }}
-                  className="ml-2 p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                  className="ml-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-all text-xs"
                   title={t('logout')}
                 >
-                  <X size={14} />
+                  <LogOut size={14} />
+                  <span>Logout</span>
                 </button>
               </div>
             ) : (
@@ -186,7 +206,7 @@ export default function App() {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            
+
             <div className="relative group">
               <button
                 className="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
@@ -199,27 +219,27 @@ export default function App() {
                 <div className="space-y-2">
                   <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <span className="text-xs font-medium">High Contrast</span>
-                    <input 
-                      type="checkbox" 
-                      checked={accMode.highContrast} 
+                    <input
+                      type="checkbox"
+                      checked={accMode.highContrast}
                       onChange={() => toggleAccMode('highContrast')}
                       className="accent-brand-500"
                     />
                   </label>
                   <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <span className="text-xs font-medium">Large Text</span>
-                    <input 
-                      type="checkbox" 
-                      checked={accMode.largeText} 
+                    <input
+                      type="checkbox"
+                      checked={accMode.largeText}
                       onChange={() => toggleAccMode('largeText')}
                       className="accent-brand-500"
                     />
                   </label>
                   <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <span className="text-xs font-medium">Voice Navigation</span>
-                    <input 
-                      type="checkbox" 
-                      checked={accMode.voiceNav} 
+                    <input
+                      type="checkbox"
+                      checked={accMode.voiceNav}
                       onChange={() => toggleAccMode('voiceNav')}
                       className="accent-brand-500"
                     />
@@ -228,7 +248,7 @@ export default function App() {
               </div>
             </div>
 
-            <button 
+            <button
               className="md:hidden p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
@@ -257,8 +277,8 @@ export default function App() {
                   }}
                   className={cn(
                     "w-full px-6 py-4 rounded-2xl text-left font-medium flex items-center gap-4 transition-all",
-                    currentView === item.id 
-                      ? "bg-brand-500 text-white shadow-lg" 
+                    currentView === item.id
+                      ? "bg-brand-500 text-white shadow-lg"
                       : "hover:bg-slate-200 dark:hover:bg-slate-800"
                   )}
                 >
@@ -283,31 +303,57 @@ export default function App() {
             className="h-full"
           >
             {currentView === 'landing' && <Landing onNavigate={setCurrentView} />}
-            {currentView === 'home' && <Home onNavigate={setCurrentView} userName={user?.name} />}
-            {currentView === 'volunteer' && <VolunteerBuddy onNavigate={setCurrentView} />}
-            {currentView === 'iot' && <IoTAmenities onNavigate={setCurrentView} />}
-            {currentView === 'challenges' && <Challenges onNavigate={setCurrentView} />}
-            {currentView === 'sos' && <EmergencySOS onNavigate={setCurrentView} />}
-            {currentView === 'voice' && <VoiceNav onNavigate={setCurrentView} />}
-            {currentView === 'impact' && <CommunityImpact onNavigate={setCurrentView} />}
             {currentView === 'login' && (
-              <Login 
-                onLogin={(name, email) => {
-                  setIsLoggedIn(true);
-                  setUser({ name, email });
-                  setCurrentView('home');
-                }} 
-                onNavigate={setCurrentView} 
+              <Login
+                onLogin={async (name, email) => {
+                  try {
+                    const response = await fetch(`${API_URL}/login`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email, password: 'password' }), // simple mock
+                    });
+                    if (response.ok) {
+                      const data = await response.json();
+                      setIsLoggedIn(true);
+                      setUser({ name: data.name, email: data.email });
+                      setCurrentView('home');
+                    }
+                  } catch (error) {
+                    console.error('Login failed:', error);
+                  }
+                }}
+                onNavigate={setCurrentView}
               />
             )}
-            
+
             {isLoggedIn ? (
               <>
+                {currentView === 'home' && <Home onNavigate={setCurrentView} userName={user?.name} />}
+                {currentView === 'volunteer' && <VolunteerBuddy onNavigate={setCurrentView} />}
+                {currentView === 'iot' && <IoTAmenities onNavigate={setCurrentView} />}
+                {currentView === 'challenges' && <Challenges onNavigate={setCurrentView} />}
+                {currentView === 'sos' && <EmergencySOS onNavigate={setCurrentView} />}
+                {currentView === 'voice' && <VoiceNav onNavigate={setCurrentView} />}
+                {currentView === 'impact' && <CommunityImpact onNavigate={setCurrentView} />}
                 {currentView === 'map' && <MapSection issues={issues} />}
-                {currentView === 'report' && <ReportForm onReport={(newIssue) => setIssues([newIssue, ...issues])} />}
+                {currentView === 'report' && <ReportForm onReport={(newIssue) => setIssues([newIssue, ...issues])} API_URL={API_URL} />}
                 {currentView === 'audit' && <AIAudit />}
                 {currentView === 'crossing' && <CrossingSimulation accMode={accMode} />}
-                {currentView === 'dashboard' && <AdminDashboard issues={issues} onResolve={(id) => setIssues(issues.map(i => i.id === id ? {...i, status: 'resolved'} : i))} />}
+                {currentView === 'dashboard' && (
+                  <AdminDashboard
+                    issues={issues}
+                    onResolve={async (id) => {
+                      try {
+                        const response = await fetch(`${API_URL}/issues/${id}/resolve`, { method: 'POST' });
+                        if (response.ok) {
+                          setIssues(issues.map(i => i.id === id ? { ...i, status: 'resolved' } : i));
+                        }
+                      } catch (error) {
+                        console.error('Failed to resolve issue:', error);
+                      }
+                    }}
+                  />
+                )}
                 {currentView === 'route' && <RoutePlanner />}
               </>
             ) : (
@@ -318,7 +364,7 @@ export default function App() {
                   </div>
                   <h2 className="text-3xl font-bold mb-4">Protected Feature</h2>
                   <p className="text-slate-500 max-w-md mb-8">Please sign in to access this feature and explore the full capabilities of InclusiveCity.</p>
-                  <button 
+                  <button
                     onClick={() => setCurrentView('login')}
                     className="px-8 py-4 rounded-2xl bg-brand-500 text-white font-bold shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all"
                   >
@@ -375,6 +421,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-    </div>
+    </div >
   );
 }
